@@ -19,8 +19,8 @@
 
         // Check for inline SVG, normalizing for prefixes like "svg\n"
         const normalizedText = text.replace(/^svg\n/, '').trim();
-        return normalizedText.startsWith("<svg") || 
-               text.startsWith("data:image/svg+xml") || 
+        return normalizedText.startsWith("<svg") ||
+               text.startsWith("data:image/svg+xml") ||
                /^https?:\/\/.*\.svg(\?.*)?$/.test(text);
       },
       component: function ({ message }) {
@@ -40,11 +40,11 @@
         if (svgContent.startsWith("<svg")) {
           return React.createElement("div", {
             dangerouslySetInnerHTML: { __html: svgContent },
-            style: { 
-              maxWidth: "100%", 
-              height: "auto", 
-              overflow: "visible", 
-              display: "block" 
+            style: {
+              maxWidth: "100%",
+              height: "auto",
+              overflow: "visible",
+              display: "block"
             }
           });
         } else if (text.startsWith("data:image/svg+xml")) {
