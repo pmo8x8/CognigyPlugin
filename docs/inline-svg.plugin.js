@@ -1,1 +1,75 @@
-!function(){function t(){var t=window.React,e={match:function(t){var e,a,n=null===(e=t.text)||void 0===e?void 0:e.trim();return"inline-svg"===((null===(a=t.data)||void 0===a?void 0:a._plugin)||{}).type||n&&(n.startsWith("<svg")||n.startsWith("data:image/svg+xml")||/^https?:\/\/.*\.svg(\?.*)?$/.test(n))},component:function(e){var a,n,i=e.message,s=(null===(a=i.data)||void 0===a?void 0:a._plugin)||{},o=(null===(n=i.text)||void 0===n?void 0:n.trim())||"",c=s.svg,g=s.url;if(g||c||o&&(o.startsWith("<svg")?c=o:(o.startsWith("data:image/svg+xml")||/^https?:\/\/.*\.svg(\?.*)?$/.test(o))&&(g=o)),!g&&c)try{var d=btoa(unescape(encodeURIComponent(c)));g="data:image/svg+xml;base64,".concat(d)}catch(t){g="data:image/svg+xml;utf8,".concat(encodeURIComponent(c))}return t.createElement("img",{src:g,alt:"SVG",style:{maxWidth:"100%",height:"auto"}})}};window.cognigyWebchatMessagePlugins=window.cognigyWebchatMessagePlugins||[],window.cognigyWebchatMessagePlugins.push(e)}window.React?t():window.addEventListener("webchatReady",(function(){if(window.React)t();else var e=setInterval((function(){window.React&&(clearInterval(e),t())}),50)}))}();
+(function () {
+  function registerPlugin() {
+    const React = window.React;
+
+    const svgPlugin = {
+      match: function (message) {
+        const text = message.text?.trim();
+        const pluginData = message.data?._plugin || {};
+        return pluginData.type === "inline-svg" ||
+          (text &&
+            (text.startsWith("<svg") ||
+              text.startsWith("data:image/svg+xml") ||
+              /^https?:\/\/.*\.svg(\?.*)?$/.test(text)));
+      },
+      component: function ({ message }) {
+        const pluginData = message.data?._plugin || {};
+        const text = message.text?.trim() || "";
+
+        let svgContent = pluginData.svg;
+        let svgUrl = pluginData.url;
+
+        if (!svgUrl) {
+          if (svgContent) {
+            // use raw XML
+          } else if (text) {
+            if (text.startsWith("<svg")) {
+              svgContent = text;
+            } else if (text.startsWith("data:image/svg+xml")) {
+              svgUrl = text;
+            } else if (/^https?:\/\/.*\.svg(\?.*)?$/.test(text)) {
+              svgUrl = text;
+            }
+          }
+        }
+
+        if (!svgUrl && svgContent) {
+          try {
+            const base64 = btoa(unescape(encodeURIComponent(svgContent)));
+            svgUrl = `data:image/svg+xml;base64,${base64}`;
+          } catch (e) {
+            svgUrl = `data:image/svg+xml;utf8,${encodeURIComponent(svgContent)}`;
+          }
+        }
+
+        return React.createElement("img", {
+          src: svgUrl,
+          alt: "SVG",
+          style: { maxWidth: "100%", height: "auto" }
+        });
+      }
+    };
+
+    window.cognigyWebchatMessagePlugins = window.cognigyWebchatMessagePlugins || [];
+    window.cognigyWebchatMessagePlugins.push(svgPlugin);
+
+    console.log("✅ Inline SVG plugin registered");
+  }
+
+  function waitForReactAndRegister() {
+    if (window.React) {
+      registerPlugin();
+    } else {
+      window.addEventListener("webchatReady", () => {
+        const interval = setInterval(() => {
+          if (window.React) {
+            clearInterval(interval);
+            registerPlugin();
+          }
+        }, 50);
+      });
+    }
+  }
+
+  waitForReactAndRegister();
+})();
