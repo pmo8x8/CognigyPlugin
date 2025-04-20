@@ -40,6 +40,7 @@
 
         // Fix common escape sequences
         svgContent = svgContent
+          .replace(/\\\\\"/g, '"')   // \\\" → "
           .replace(/\\"/g, '"')      // Unescape double quotes
           .replace(/\\n/g, '\n')     // Unescape newlines
           .replace(/\\r/g, '\r')     // Unescape carriage returns
