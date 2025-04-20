@@ -37,9 +37,14 @@
           // Normalize by removing "svg\n" prefix
           svgContent = text.replace(/^svg\n/, '').trim();
         }
+        
+        // Fix common escape sequences
+        svgContent = svgContent
+          .replace(/\\"/g, '"')      // Escaped quotes
+          .replace(/\\n/g, '\n')     // Escaped newlines
+          .replace(/\\r/g, '\r')     // Escaped carriage returns
+          .replace(/\\\\/g, '\\');   // Escaped backslashes
 
-        // Fix escaped quotes (\" to ") for valid SVG
-        svgContent = svgContent.replace(/\\"/g, '"');
 
         if (svgContent.startsWith("<svg")) {
           return React.createElement("div", {
