@@ -28,7 +28,7 @@
       component: function ({ message }) {
         console.log("[SVG Plugin] Rendering component for message:", message);
         const text = message.text?.trim() || "";
-        let svgContent = text;
+        let svgContent = JSON.parse(`"${text.replace(/"/g, '\\"')}"`);
 
         // Extract SVG from code block if present
         const codeBlockMatch = text.match(/```(svg|xml)\n([\s\S]*?)\n```/);
