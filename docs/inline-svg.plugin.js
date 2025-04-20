@@ -2,7 +2,7 @@
   function registerPlugin() {
     const React = window.React;
     if (!React) {
-      console.error("❌ React not found in registerPlugin");
+      console.error("React not found in registerPlugin");
       return;
     }
 
@@ -29,7 +29,7 @@
 
         if (!svgUrl) {
           if (svgContent) {
-            // use raw XML
+            // Use raw XML
           } else if (text) {
             if (text.startsWith("<svg")) {
               svgContent = text;
@@ -42,20 +42,27 @@
         }
 
         if (!svgUrl && svgContent) {
+          // Clean the SVG content to remove invalid escape characters
+          svgContent = svgContent
+            .replace(/\\"/g, '"') // Remove escaped quotes
+            .replace(/\\\\/g, '\\') // Remove double backslashes
+            .trim();
+
           try {
             const base64 = btoa(unescape(encodeURIComponent(svgContent)));
             svgUrl = `data:image/svg+xml;base64,${base64}`;
           } catch (e) {
-            console.error("[SVG Plugin] Error encoding SVG:", e);
+            console.error("[SVG Plugin] Error encoding SVG to Base64:", e);
             svgUrl = `data:image/svg+xml;utf8,${encodeURIComponent(svgContent)}`;
           }
         }
 
         if (!svgUrl) {
-          console.error("[SVG Plugin] No valid SVG URL or content found");
+          console.error("[SVG Plugin] No valid SVG URL or content found", { svgContent, text, pluginData });
           return null;
         }
 
+        console.log("[SVG Plugin] Rendering SVG with URL:", svgUrl);
         return React.createElement("img", {
           src: svgUrl,
           alt: "SVG",
@@ -66,7 +73,7 @@
 
     window.cognigyWebchatMessagePlugins = window.cognigyWebchatMessagePlugins || [];
     window.cognigyWebchatMessagePlugins.push(svgPlugin);
-    console.log("✅ Inline SVG plugin registered");
+    console.log("Inline SVG plugin registered");
   }
 
   function waitForReactAndRegister() {
@@ -83,7 +90,7 @@
         }, 50);
         setTimeout(() => {
           if (!window.React) {
-            console.error("❌ React not found after 5s timeout");
+            console.error("React not found after 5s timeout");
           }
         }, 5000);
       });
