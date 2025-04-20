@@ -6,7 +6,7 @@
       return;
     }
 
-    // Unescapes deeply escaped SVG text (e.g. from Say Nodes)
+    // 🔧 Handles deeply escaped SVG (e.g., from Say Nodes)
     function deeplyUnescapeSvgString(raw) {
       return raw
         .replace(/\\\\\"/g, '"')     // \\\" => "
@@ -19,17 +19,14 @@
 
     const svgPlugin = {
       match: function (message) {
-        console.log("[SVG Plugin] Checking message:", message);
         const text = message.text?.trim() || "";
-
-        // Match SVG code blocks (```svg\n...)
         const codeBlockMatch = text.match(/```(svg|xml)\n([\s\S]*?)\n```/);
+
         if (codeBlockMatch) {
           const svgContent = codeBlockMatch[2].trim();
           return svgContent.startsWith("<svg");
         }
 
-        // Match inline SVGs, data URIs or URLs
         const normalizedText = text.replace(/^svg\n/, '').trim();
         return normalizedText.startsWith("<svg") ||
                text.startsWith("data:image/svg+xml") ||
@@ -37,7 +34,6 @@
       },
 
       component: function ({ message }) {
-        console.log("[SVG Plugin] Rendering component for message:", message);
         const text = message.text?.trim() || "";
         let svgContent;
 
@@ -50,7 +46,10 @@
           svgContent = deeplyUnescapeSvgString(raw);
         }
 
-        // Ensure xmlns is present
+        // Trim any whitespace just in case
+        svgContent = svgContent.trim();
+
+        // Inject missing xmlns
         if (svgContent.startsWith("<svg") && !svgContent.includes('xmlns="http://www.w3.org/2000/svg"')) {
           svgContent = svgContent.replace(
             /<svg/,
@@ -58,46 +57,56 @@
           );
         }
 
-        console.log("✅ Final SVG content:", svgContent);
+        console.log("✅ [SVG Plugin] Final SVG to render:", svgContent);
 
-        // Inline SVG
+        // Add debug hook to inspect innerHTML after render
+        setTimeout(() => {
+          const debugEl = document.querySelector('[data-svg-debug]');
+          if (debugEl) {
+            console.log("🔎 Rendered innerHTML:", debugEl.innerHTML);
+          } else {
+            console.warn("⚠️ SVG debug element not found.");
+          }
+        }, 1000);
+
+        // Inline SVG render
         if (svgContent.startsWith("<svg")) {
           return React.createElement("div", {
             dangerouslySetInnerHTML: { __html: svgContent },
+            "data-svg-debug": true,
             style: {
               width: "100%",
               height: "auto",
-              minHeight: "200px",             // 👈 Ensures container isn't collapsing
+              minHeight: "200px",
               overflow: "visible",
-              display: "flex",                // 👈 Make sure it’s block-level and visible
+              display: "flex",
               justifyContent: "center",
               alignItems: "center",
-              background: "#eee",             // 👈 Optional: confirm it’s being rendered
-              border: "1px solid red"         // 👈 Optional: visual debug box
+              background: "#f9f9f9",
+              border: "2px dashed #666"
             }
           });
         }
 
-        // Fallback: base64 or URL
-        if (text.startsWith("data:image/svg+xml")) {
+        // Render as <img> fallback
+        if (text.startsWith("data:image/svg+xml") || /^https?:\/\/.*\.svg(\?.*)?$/.test(text)) {
           return React.createElement("img", {
             src: text,
             alt: "SVG Chart",
-            style: { maxWidth: "100%", height: "auto" }
-          });
-        } else if (/^https?:\/\/.*\.svg(\?.*)?$/.test(text)) {
-          return React.createElement("img", {
-            src: text,
-            alt: "SVG Chart",
-            style: { maxWidth: "100%", height: "auto" }
+            style: {
+              maxWidth: "100%",
+              height: "auto",
+              border: "2px dashed green"
+            }
           });
         }
 
-        console.error("[SVG Plugin] No valid SVG content found", message);
+        console.error("[SVG Plugin] ❌ No valid SVG content found", message);
         return React.createElement("div", {}, "Error: Unable to render SVG");
       }
     };
 
+    // Register plugin
     window.cognigyWebchatMessagePlugins = window.cognigyWebchatMessagePlugins || [];
     window.cognigyWebchatMessagePlugins.push(svgPlugin);
     console.log("✅ Inline SVG plugin registered");
@@ -107,7 +116,7 @@
     if (window.React) {
       registerPlugin();
     } else {
-      console.log("[SVG Plugin] Waiting for webchatReady");
+      console.log("[SVG Plugin] ⏳ Waiting for webchatReady...");
       window.addEventListener("webchatReady", () => {
         const interval = setInterval(() => {
           if (window.React) {
@@ -117,13 +126,13 @@
         }, 50);
         setTimeout(() => {
           if (!window.React) {
-            console.error("❌ React not found after 5s timeout");
+            console.error("❌ React still not found after 5s timeout");
           }
         }, 5000);
       });
     }
   }
 
-  // Start plugin
+  // Bootstrap the plugin
   waitForReactAndRegister();
 })();
