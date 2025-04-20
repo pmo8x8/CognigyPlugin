@@ -1,7 +1,6 @@
 (function () {
   function registerPlugin() {
     const React = window.React;
-
     const svgPlugin = {
       match: function (message) {
         const text = message.text?.trim();
@@ -15,7 +14,6 @@
       component: function ({ message }) {
         const pluginData = message.data?._plugin || {};
         const text = message.text?.trim() || "";
-
         let svgContent = pluginData.svg;
         let svgUrl = pluginData.url;
 
@@ -52,7 +50,6 @@
 
     window.cognigyWebchatMessagePlugins = window.cognigyWebchatMessagePlugins || [];
     window.cognigyWebchatMessagePlugins.push(svgPlugin);
-
     console.log("✅ Inline SVG plugin registered");
   }
 
