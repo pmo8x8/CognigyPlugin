@@ -65,12 +65,15 @@
           return React.createElement("div", {
             dangerouslySetInnerHTML: { __html: svgContent },
             style: {
-              maxWidth: "100%",
+              width: "100%",
               height: "auto",
+              minHeight: "200px",             // 👈 Ensures container isn't collapsing
               overflow: "visible",
-              display: "block",
-              margin: "0 auto",
-              border: "1px dashed #ccc" // Optional debug border
+              display: "flex",                // 👈 Make sure it’s block-level and visible
+              justifyContent: "center",
+              alignItems: "center",
+              background: "#eee",             // 👈 Optional: confirm it’s being rendered
+              border: "1px solid red"         // 👈 Optional: visual debug box
             }
           });
         }
