@@ -1,26 +1,27 @@
 (function () {
   function registerPlugin() {
     const React = window.React;
+    if (!React) {
+      console.error("❌ React not found in registerPlugin");
+      return;
+    }
+
     const svgPlugin = {
       match: function (message) {
         console.log("[SVG Plugin] Checking message:", message);
-      
         const pluginData = message.data?._plugin || {};
         const text = message.text?.trim() || "";
-      
-        // Always match if _plugin.type is "inline-svg"
         if (pluginData.type === "inline-svg") {
           return true;
         }
-      
-        // Match text content that contains raw SVG or SVG data/URL
         return (
           text.startsWith("<svg") ||
           text.startsWith("data:image/svg+xml") ||
           /^https?:\/\/.*\.svg(\?.*)?$/.test(text)
         );
-      }
+      },
       component: function ({ message }) {
+        console.log("[SVG Plugin] Rendering component for message:", message);
         const pluginData = message.data?._plugin || {};
         const text = message.text?.trim() || "";
         let svgContent = pluginData.svg;
@@ -45,8 +46,14 @@
             const base64 = btoa(unescape(encodeURIComponent(svgContent)));
             svgUrl = `data:image/svg+xml;base64,${base64}`;
           } catch (e) {
+            console.error("[SVG Plugin] Error encoding SVG:", e);
             svgUrl = `data:image/svg+xml;utf8,${encodeURIComponent(svgContent)}`;
           }
+        }
+
+        if (!svgUrl) {
+          console.error("[SVG Plugin] No valid SVG URL or content found");
+          return null;
         }
 
         return React.createElement("img", {
@@ -66,6 +73,7 @@
     if (window.React) {
       registerPlugin();
     } else {
+      console.log("[SVG Plugin] Waiting for webchatReady");
       window.addEventListener("webchatReady", () => {
         const interval = setInterval(() => {
           if (window.React) {
@@ -73,6 +81,11 @@
             registerPlugin();
           }
         }, 50);
+        setTimeout(() => {
+          if (!window.React) {
+            console.error("❌ React not found after 5s timeout");
+          }
+        }, 5000);
       });
     }
   }
