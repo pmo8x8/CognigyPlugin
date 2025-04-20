@@ -10,29 +10,50 @@
       match: function (message) {
         console.log("[SVG Plugin] Checking message:", message);
         const text = message.text?.trim() || "";
-        // Check if the text contains an SVG (either inline or a URL)
-        return text.startsWith("<svg") || text.startsWith("data:image/svg+xml") || /^https?:\/\/.*\.svg(\?.*)?$/.test(text);
+
+        // Check for SVG in code block (e.g., ```svg\n<svg...)
+        const codeBlockMatch = text.match(/```svg\n([\s\S]*?)\n```/);
+        if (codeBlockMatch) {
+          return codeBlockMatch[1].trim().startsWith("<svg");
+        }
+
+        // Check for inline SVG, normalizing for prefixes like "svg\n"
+        const normalizedText = text.replace(/^svg\n/, '').trim();
+        return normalizedText.startsWith("<svg") || 
+               text.startsWith("data:image/svg+xml") || 
+               /^https?:\/\/.*\.svg(\?.*)?$/.test(text);
       },
       component: function ({ message }) {
         console.log("[SVG Plugin] Rendering component for message:", message);
         const text = message.text?.trim() || "";
+        let svgContent = text;
 
-        // If the message contains an SVG, we can directly use the content
-        if (text.startsWith("<svg")) {
-          // Directly render the SVG content in the message as raw HTML
+        // Extract SVG from code block if present
+        const codeBlockMatch = text.match(/```svg\n([\s\S]*?)\n```/);
+        if (codeBlockMatch) {
+          svgContent = codeBlockMatch[1].trim();
+        } else {
+          // Normalize by removing "svg\n" prefix
+          svgContent = text.replace(/^svg\n/, '').trim();
+        }
+
+        if (svgContent.startsWith("<svg")) {
           return React.createElement("div", {
-            dangerouslySetInnerHTML: { __html: text },
-            style: { maxWidth: "100%", height: "auto" }
+            dangerouslySetInnerHTML: { __html: svgContent },
+            style: { 
+              maxWidth: "100%", 
+              height: "auto", 
+              overflow: "visible", 
+              display: "block" 
+            }
           });
         } else if (text.startsWith("data:image/svg+xml")) {
-          // Handle SVG as a data URL (base64 encoded or text)
           return React.createElement("img", {
             src: text,
             alt: "SVG Chart",
             style: { maxWidth: "100%", height: "auto" }
           });
         } else if (/^https?:\/\/.*\.svg(\?.*)?$/.test(text)) {
-          // Handle SVG URL (external link)
           return React.createElement("img", {
             src: text,
             alt: "SVG Chart",
@@ -40,7 +61,6 @@
           });
         }
 
-        // If no SVG content is found, display an error message
         console.error("[SVG Plugin] No valid SVG content found", message);
         return React.createElement("div", {}, "Error: Unable to render SVG");
       }
@@ -71,6 +91,3 @@
       });
     }
   }
-
-  waitForReactAndRegister();
-})();
