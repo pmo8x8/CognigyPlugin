@@ -3,14 +3,23 @@
     const React = window.React;
     const svgPlugin = {
       match: function (message) {
-        const text = message.text?.trim();
+        console.log("[SVG Plugin] Checking message:", message);
+      
         const pluginData = message.data?._plugin || {};
-        return pluginData.type === "inline-svg" ||
-          (text &&
-            (text.startsWith("<svg") ||
-              text.startsWith("data:image/svg+xml") ||
-              /^https?:\/\/.*\.svg(\?.*)?$/.test(text)));
-      },
+        const text = message.text?.trim() || "";
+      
+        // Always match if _plugin.type is "inline-svg"
+        if (pluginData.type === "inline-svg") {
+          return true;
+        }
+      
+        // Match text content that contains raw SVG or SVG data/URL
+        return (
+          text.startsWith("<svg") ||
+          text.startsWith("data:image/svg+xml") ||
+          /^https?:\/\/.*\.svg(\?.*)?$/.test(text)
+        );
+      }
       component: function ({ message }) {
         const pluginData = message.data?._plugin || {};
         const text = message.text?.trim() || "";
