@@ -91,3 +91,7 @@
       });
     }
   }
+
+  // 🔧 Invoke the function so the plugin gets registered
+  waitForReactAndRegister();
+})();
