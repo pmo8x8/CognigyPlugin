@@ -11,14 +11,14 @@
         console.log("[SVG Plugin] Checking message:", message);
         const text = message.text?.trim() || "";
 
-        // Check for SVG in code block (e.g., ```svg\n<svg... or ```xml\n<svg...)
+        // Match code block with svg or xml
         const codeBlockMatch = text.match(/```(svg|xml)\n([\s\S]*?)\n```/);
         if (codeBlockMatch) {
           const svgContent = codeBlockMatch[2].trim();
           return svgContent.startsWith("<svg");
         }
 
-        // Check for inline SVG, normalizing for prefixes like "svg\n"
+        // Match inline SVG or URL/data SVGs
         const normalizedText = text.replace(/^svg\n/, '').trim();
         return normalizedText.startsWith("<svg") ||
                text.startsWith("data:image/svg+xml") ||
@@ -28,26 +28,32 @@
       component: function ({ message }) {
         console.log("[SVG Plugin] Rendering component for message:", message);
         const text = message.text?.trim() || "";
-        let svgContent = JSON.parse(`"${text.replace(/"/g, '\\"')}"`);
+        let svgContent;
 
-        // Extract SVG from code block if present
+        // Extract SVG content from code block if present
         const codeBlockMatch = text.match(/```(svg|xml)\n([\s\S]*?)\n```/);
         if (codeBlockMatch) {
           svgContent = codeBlockMatch[2].trim();
         } else {
-          svgContent = text.replace(/^svg\n/, '').trim();
+          let raw = text.replace(/^svg\n/, '').trim();
+
+          // Decode double-escaped content using JSON.parse
+          try {
+            svgContent = JSON.parse(`"${raw.replace(/"/g, '\\"')}"`);
+          } catch (e) {
+            console.warn("[SVG Plugin] Fallback to raw text due to JSON parse failure", e);
+            svgContent = raw;
+          }
         }
 
-        // Fix common escape sequences
+        // Final cleanup of escape characters
         svgContent = svgContent
-          .replace(/\\\\\"/g, '"')   // \\\" → "
-          .replace(/\\"/g, '"')      // Unescape double quotes
-          .replace(/\\n/g, '\n')     // Unescape newlines
-          .replace(/\\r/g, '\r')     // Unescape carriage returns
-          .replace(/\\\\/g, '\\')    // Unescape backslashes
+          .replace(/\\n/g, '\n')
+          .replace(/\\r/g, '\r')
+          .replace(/\\\\/g, '\\')
           .trim();
 
-        // Ensure xmlns is present
+        // Ensure xmlns is present for proper rendering
         if (svgContent.startsWith("<svg") && !svgContent.includes('xmlns="http://www.w3.org/2000/svg"')) {
           svgContent = svgContent.replace(
             /<svg/,
@@ -55,10 +61,9 @@
           );
         }
 
-        // Debug output to verify SVG being rendered
         console.log("✅ Final SVG content:", svgContent);
 
-        // Render SVG directly
+        // Inline SVG render
         if (svgContent.startsWith("<svg")) {
           return React.createElement("div", {
             dangerouslySetInnerHTML: { __html: svgContent },
@@ -68,13 +73,13 @@
               overflow: "visible",
               display: "block",
               margin: "0 auto",
-              border: "1px dashed #ccc" // Remove after confirming it renders
+              border: "1px dashed #ccc" // Optional debug border
             }
           });
-        } 
-        
-        // Base64 or URL fallback
-        else if (text.startsWith("data:image/svg+xml")) {
+        }
+
+        // Fallback to <img> for data URI or remote SVG
+        if (text.startsWith("data:image/svg+xml")) {
           return React.createElement("img", {
             src: text,
             alt: "SVG Chart",
@@ -119,6 +124,6 @@
     }
   }
 
-  // Invoke the function so the plugin gets registered
+  // Start plugin
   waitForReactAndRegister();
 })();
