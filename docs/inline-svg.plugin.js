@@ -11,10 +11,11 @@
         console.log("[SVG Plugin] Checking message:", message);
         const text = message.text?.trim() || "";
 
-        // Check for SVG in code block (e.g., ```svg\n<svg...)
-        const codeBlockMatch = text.match(/```svg\n([\s\S]*?)\n```/);
+        // Check for SVG in code block (e.g., ```svg\n<svg... or ```xml\n<svg...)
+        const codeBlockMatch = text.match(/```(svg|xml)\n([\s\S]*?)\n```/);
         if (codeBlockMatch) {
-          return codeBlockMatch[1].trim().startsWith("<svg");
+          const svgContent = codeBlockMatch[2].trim();
+          return svgContent.startsWith("<svg");
         }
 
         // Check for inline SVG, normalizing for prefixes like "svg\n"
@@ -28,14 +29,17 @@
         const text = message.text?.trim() || "";
         let svgContent = text;
 
-        // Extract SVG from code block if present
-        const codeBlockMatch = text.match(/```svg\n([\s\S]*?)\n```/);
+        // Extract SVG from code block if present (supports ```svg or ```xml)
+        const codeBlockMatch = text.match(/```(svg|xml)\n([\s\S]*?)\n```/);
         if (codeBlockMatch) {
-          svgContent = codeBlockMatch[1].trim();
+          svgContent = codeBlockMatch[2].trim();
         } else {
           // Normalize by removing "svg\n" prefix
           svgContent = text.replace(/^svg\n/, '').trim();
         }
+
+        // Fix escaped quotes (\" to ") for valid SVG
+        svgContent = svgContent.replace(/\\"/g, '"');
 
         if (svgContent.startsWith("<svg")) {
           return React.createElement("div", {
@@ -44,7 +48,8 @@
               maxWidth: "100%",
               height: "auto",
               overflow: "visible",
-              display: "block"
+              display: "block",
+              margin: "0 auto"
             }
           });
         } else if (text.startsWith("data:image/svg+xml")) {
@@ -92,6 +97,6 @@
     }
   }
 
-  // 🔧 Invoke the function so the plugin gets registered
+  // Invoke the function so the plugin gets registered
   waitForReactAndRegister();
 })();
