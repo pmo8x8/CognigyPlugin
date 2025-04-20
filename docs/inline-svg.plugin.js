@@ -24,28 +24,40 @@
                text.startsWith("data:image/svg+xml") ||
                /^https?:\/\/.*\.svg(\?.*)?$/.test(text);
       },
+
       component: function ({ message }) {
         console.log("[SVG Plugin] Rendering component for message:", message);
         const text = message.text?.trim() || "";
         let svgContent = text;
 
-        // Extract SVG from code block if present (supports ```svg or ```xml)
+        // Extract SVG from code block if present
         const codeBlockMatch = text.match(/```(svg|xml)\n([\s\S]*?)\n```/);
         if (codeBlockMatch) {
           svgContent = codeBlockMatch[2].trim();
         } else {
-          // Normalize by removing "svg\n" prefix
           svgContent = text.replace(/^svg\n/, '').trim();
         }
-        
+
         // Fix common escape sequences
         svgContent = svgContent
-          .replace(/\\"/g, '"')      // Escaped quotes
-          .replace(/\\n/g, '\n')     // Escaped newlines
-          .replace(/\\r/g, '\r')     // Escaped carriage returns
-          .replace(/\\\\/g, '\\');   // Escaped backslashes
+          .replace(/\\"/g, '"')      // Unescape double quotes
+          .replace(/\\n/g, '\n')     // Unescape newlines
+          .replace(/\\r/g, '\r')     // Unescape carriage returns
+          .replace(/\\\\/g, '\\')    // Unescape backslashes
+          .trim();
 
+        // Ensure xmlns is present
+        if (svgContent.startsWith("<svg") && !svgContent.includes('xmlns="http://www.w3.org/2000/svg"')) {
+          svgContent = svgContent.replace(
+            /<svg/,
+            '<svg xmlns="http://www.w3.org/2000/svg"'
+          );
+        }
 
+        // Debug output to verify SVG being rendered
+        console.log("✅ Final SVG content:", svgContent);
+
+        // Render SVG directly
         if (svgContent.startsWith("<svg")) {
           return React.createElement("div", {
             dangerouslySetInnerHTML: { __html: svgContent },
@@ -54,10 +66,14 @@
               height: "auto",
               overflow: "visible",
               display: "block",
-              margin: "0 auto"
+              margin: "0 auto",
+              border: "1px dashed #ccc" // Remove after confirming it renders
             }
           });
-        } else if (text.startsWith("data:image/svg+xml")) {
+        } 
+        
+        // Base64 or URL fallback
+        else if (text.startsWith("data:image/svg+xml")) {
           return React.createElement("img", {
             src: text,
             alt: "SVG Chart",
